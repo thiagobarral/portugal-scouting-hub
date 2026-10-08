@@ -1,0 +1,13 @@
+# Core data analysis
+numpy
+pandas
+
+# Data collection
+curl-cffi
+
+# Visualization and web application
+plotly
+streamlit
+
+# Notebook / exploratory analysis
+matplotlib

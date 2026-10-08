@@ -1,0 +1,56 @@
+# Virtual environments
+.venv*/
+venv/
+env/
+
+# Python cache / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / editor settings
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Temporary / backup files
+*.tmp
+*.temp
+*.bak
+*~
+
+# Data
+data/raw/
+data/processed/players_2025_26.csv
+data/processed/scouting_dataset_2025_26.csv
+
+# Source
+src/scouting_old.py
+
+# Development-only exploratory tests
+src/test_player_profile.py
+src/test_tournament_players.py
