@@ -1,16 +1,12 @@
 # Portugal Scouting Hub
 
-[🇬🇧 English](README.md) | [🇧🇷 Português](README.pt-BR.md)
+[English](README.md) | [Português](README.pt-BR.md)
 
 **Analytics aplicado ao scouting para identificação e avaliação de talentos SUB-23 no futebol português.**
 
 O Portugal Scouting Hub é um projeto de portfólio que combina coleta de dados, processamento, football analytics e um produto de dados interativo desenvolvido em Streamlit. A aplicação permite analisar perfis de jogadores, comparar atletas da mesma posição e buscar talentos por meio de métricas específicas por posição.
 
 > **Importante:** o Profile Score é um indicador configurável de aderência ao perfil definido pelas métricas e pesos selecionados. Ele não deve ser interpretado como uma medida objetiva da qualidade geral de um jogador.
-
-## Visão do Produto
-
-> As capturas de tela serão adicionadas aqui antes da publicação: Perfil do Jogador, Comparação e Buscar Talentos.
 
 ## Objetivo do Projeto
 
@@ -46,17 +42,11 @@ Profile Score
 Aplicação Streamlit + Plotly
 ```
 
-A aplicação pública **não depende de uma nova coleta de dados**. O repositório contém o dataset processado necessário:
-
-```text
-data/processed/scouting_dataset_2025_26.csv
-```
-
-Os arquivos brutos permanecem fora do controle de versão.
+O arquivo `data/processed/scouting_dataset_2025_26.csv` é utilizado pela aplicação local, mas **não é distribuído neste repositório**. Os arquivos brutos em `data/raw/` também permanecem fora do controle de versão. A disponibilização pública dos dados e da aplicação depende da confirmação das condições de uso com o SofaScore.
 
 ## Dataset
 
-A aplicação utiliza **574 jogadores únicos** da base da liga portuguesa de 2025/26 usada neste projeto. O dataset público final possui **46 campos**, selecionados da base original para manter apenas as informações e estatísticas necessárias ao produto.
+A aplicação utiliza **574 jogadores únicos** da base da liga portuguesa de 2025/26 usada neste projeto. O dataset processado local possui **46 campos**, selecionados da base original para manter apenas as informações e estatísticas necessárias ao produto.
 
 Ele inclui identificadores, nome, clube, data de nascimento, idade calculada, indicador SUB-23, posição, altura, pé preferencial, país, valor de mercado, minutos, jogos, titularidades e estatísticas ofensivas, de passe, defensivas e de goleiros utilizadas pelo motor analítico.
 
@@ -136,7 +126,7 @@ football-analytics/
 │   └── app.py
 ├── data/
 │   ├── processed/
-│   │   └── scouting_dataset_2025_26.csv
+│   │   └── scouting_dataset_2025_26.csv  # local; não versionado
 │   └── raw/                       # ignorado pelo Git
 ├── notebooks/
 │   ├── 01_data_quality.ipynb
@@ -159,8 +149,8 @@ Python · Pandas · NumPy · Streamlit · Plotly · Matplotlib · curl-cffi · J
 ## Instalação
 
 ```bash
-git clone <url-do-repositorio>
-cd football-analytics
+git clone https://github.com/thiagobarral/portugal-scouting-hub.git
+cd portugal-scouting-hub
 python -m venv .venv
 ```
 
@@ -191,15 +181,15 @@ Na raiz do projeto:
 python -m streamlit run app/app.py
 ```
 
-O dataset processado já está incluído, portanto não é necessário executar novamente a coleta dos dados brutos.
+**Pré-requisito:** o arquivo `data/processed/scouting_dataset_2025_26.csv` deve estar disponível localmente. Ele não é fornecido no repositório. Sem esse arquivo, a aplicação não pode ser executada com os dados reais. Não há, neste momento, um dataset público para download nem uma instância pública hospedada.
 
-## Coleta de Dados
+## Fonte dos Dados e Condições de Uso
 
-O projeto mantém os scripts utilizados durante as etapas de coleta e processamento. Os dados usados no desenvolvimento foram obtidos de endpoints derivados do SofaScore, internos/não documentados, que podem mudar ou deixar de funcionar no futuro.
+**Fonte consultada no desenvolvimento:** [SofaScore](https://www.sofascore.com/). O projeto foi desenvolvido com estatísticas de jogadores da Liga Portugal 2025/26, obtidas por meio de endpoints utilizados pelo site, internos/não documentados. O dataset local foi limpo, selecionado e transformado para análise de scouting; essas transformações não alteram a atribuição da fonte original.
 
-Por isso, os JSONs brutos não são necessários para executar a aplicação pública, `data/raw/` é excluído do controle de versão e o dataset processado necessário ao app é incluído no repositório. Os scripts de coleta são mantidos para demonstrar o fluxo de Data Engineering, mas futuras coletas podem exigir alterações.
+A base local contém 574 jogadores e 46 campos. Os registros originais e processados **não são redistribuídos neste repositório**. A autorização para redistribuição dos dados e exibição pública das estatísticas no Streamlit ainda não foi confirmada. A referência à fonte não implica afiliação, endosso ou licença concedida pelo SofaScore.
 
-As imagens de jogadores e equipes também podem depender de recursos externos e ficar indisponíveis independentemente do dataset processado.
+Os scripts de coleta e processamento documentam o fluxo técnico do projeto, mas não representam uma API oficial ou uma autorização de uso. Os endpoints podem mudar, e a execução de novas coletas deve observar os termos e permissões aplicáveis. Imagens de jogadores e clubes podem depender de recursos externos.
 
 ## Limitações
 
@@ -209,7 +199,7 @@ Um Profile Score alto representa aderência ao perfil estatístico selecionado, 
 
 ## Possíveis Evoluções
 
-Possíveis extensões incluem outras temporadas e tendências históricas, seletores de liga/temporada, perfis mais específicos por função, métricas contextuais adicionais, exportação de relatórios e deploy público da aplicação Streamlit.
+Possíveis extensões incluem outras temporadas e tendências históricas, seletores de liga/temporada, perfis mais específicos por função, métricas contextuais adicionais, exportação de relatórios e deploy público da aplicação Streamlit, sujeito às permissões de uso dos dados.
 
 Modelos preditivos de Machine Learning e similaridade automática entre jogadores estão intencionalmente fora do escopo atual.
 

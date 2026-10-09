@@ -1,16 +1,12 @@
 # Portugal Scouting Hub
 
-[🇬🇧 English](README.md) | [🇧🇷 Português](README.pt-BR.md)
+[English](README.md) | [Português](README.pt-BR.md)
 
 **Data-driven scouting analytics for identifying and evaluating U23 talent in Portuguese football.**
 
 Portugal Scouting Hub is a portfolio project combining data collection, processing, football analytics and an interactive Streamlit product. It supports player profiling, same-position comparison and configurable talent discovery using position-specific performance metrics.
 
 > **Important:** the Profile Score is a configurable profile-fit indicator based on selected metrics and weights. It is not an objective measure of overall player quality.
-
-## Product Preview
-
-> Screenshots will be added here before publication: Player Profile, Player Comparison and Talent Finder.
 
 ## Project Objective
 
@@ -46,17 +42,11 @@ Profile Score
 Streamlit + Plotly application
 ```
 
-The public application does **not** require a new data collection run. The repository includes the processed dataset required by the app:
-
-```text
-data/processed/scouting_dataset_2025_26.csv
-```
-
-Raw collection files are kept outside version control.
+The application uses `data/processed/scouting_dataset_2025_26.csv` locally, but **this file is not distributed in the repository**. Raw files in `data/raw/` are also excluded from version control. Public distribution of the dataset and deployment of the application are pending clarification of data usage permissions with SofaScore.
 
 ## Dataset
 
-The application dataset contains **574 unique players** from the 2025/26 Portuguese league dataset used in this project. The final public dataset contains **46 fields**, selected from the larger collected dataset to include only information and statistics required by the application.
+The application dataset contains **574 unique players** from the 2025/26 Portuguese league dataset used in this project. The locally processed dataset contains **46 fields**, selected from the larger collected dataset to include only information and statistics required by the application.
 
 It includes player/team identifiers, name, birth date, calculated age, U23 flag, position, height, preferred foot, country, market value, minutes, appearances, starts and the attacking, passing, defensive and goalkeeper statistics required by the analytical engine.
 
@@ -136,7 +126,7 @@ football-analytics/
 │   └── app.py
 ├── data/
 │   ├── processed/
-│   │   └── scouting_dataset_2025_26.csv
+│   │   └── scouting_dataset_2025_26.csv  # local; not tracked
 │   └── raw/                       # ignored by Git
 ├── notebooks/
 │   ├── 01_data_quality.ipynb
@@ -159,8 +149,8 @@ Python · Pandas · NumPy · Streamlit · Plotly · Matplotlib · curl-cffi · J
 ## Installation
 
 ```bash
-git clone <repository-url>
-cd football-analytics
+git clone https://github.com/thiagobarral/portugal-scouting-hub.git
+cd portugal-scouting-hub
 python -m venv .venv
 ```
 
@@ -191,15 +181,15 @@ From the project root:
 python -m streamlit run app/app.py
 ```
 
-The processed dataset is already included, so running the app does not require collecting the raw data again.
+**Prerequisite:** `data/processed/scouting_dataset_2025_26.csv` must be available locally. It is not provided with this repository. Without this file, the app cannot run against the real dataset. There is currently no publicly downloadable dataset or hosted public application.
 
-## Data Collection
+## Data Source and Usage Permissions
 
-The project retains scripts used during collection and processing. The source data used in development was obtained from SofaScore-derived internal/undocumented endpoints, which may change or become unavailable over time.
+**Source consulted during development:** [SofaScore](https://www.sofascore.com/). The project was developed using player statistics for Liga Portugal 2025/26, obtained through internal/undocumented endpoints used by the website. The local dataset was cleaned, selected and transformed for scouting analysis; these transformations do not change the attribution of the original source.
 
-For this reason, raw JSON files are not required by the public app, `data/raw/` is excluded from version control, and the processed dataset needed by the app is included in the repository. Collection scripts are retained to demonstrate the data-engineering workflow, but successful future collection is not guaranteed.
+The local dataset contains 574 players and 46 fields. Original and processed records **are not redistributed through this repository**. Permission to redistribute the data or publicly display the statistics through Streamlit has not yet been confirmed. Attribution does not imply affiliation, endorsement or a license from SofaScore.
 
-Player and team images displayed by the application may also depend on external image resources and can therefore become unavailable independently of the processed dataset.
+The collection and processing scripts document the technical workflow; they are not an official API or evidence of permission to use the service. Endpoints may change, and any further collection must comply with applicable terms and permissions. Player and team images may depend on external resources.
 
 ## Limitations
 
@@ -209,7 +199,7 @@ A high Profile Score therefore represents fit to the selected statistical profil
 
 ## Future Improvements
 
-Possible extensions include additional seasons and historical trends, league/season selectors, richer role-specific profiles, additional contextual metrics, exportable scouting reports and public deployment of the Streamlit application.
+Possible extensions include additional seasons and historical trends, league/season selectors, richer role-specific profiles, additional contextual metrics, exportable scouting reports and public deployment of the Streamlit application, subject to data usage permissions.
 
 Machine-learning player similarity and predictive models are intentionally outside the current scope.
 
