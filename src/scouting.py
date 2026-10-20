@@ -345,21 +345,28 @@ def create_pools(analysis):
 def get_player_profile(
     player_name,
     analysis,
+    player_id=None,
 ):
     """
     Retorna a linha completa de um jogador.
     """
 
-    player = analysis[
-        analysis["name"]
-        == player_name
-    ]
+    # Prefer the stable identifier when provided. Names are not unique.
+    if player_id is not None:
+        if "player_id" not in analysis.columns:
+            raise ValueError("Coluna player_id não encontrada.")
+        player = analysis[analysis["player_id"] == player_id]
+    else:
+        if player_name is None:
+            raise ValueError("Informe player_name ou player_id.")
+        player = analysis[analysis["name"] == player_name]
 
     if player.empty:
-
+        raise ValueError(f"Jogador não encontrado: {player_id if player_id is not None else player_name}")
+    if len(player) > 1:
         raise ValueError(
-            f"Jogador não encontrado: "
-            f"{player_name}"
+            f"Identificação ambígua: {player_name if player_id is None else player_id}. "
+            "Selecione o jogador por player_id."
         )
 
     return player.iloc[0]
@@ -372,6 +379,7 @@ def get_player_profile(
 def get_player_info(
     player_name,
     analysis,
+    player_id=None,
 ):
     """
     Retorna as principais informações utilizadas
@@ -381,6 +389,7 @@ def get_player_info(
     player = get_player_profile(
         player_name,
         analysis,
+        player_id=player_id,
     )
 
     return {
@@ -545,6 +554,7 @@ def get_player_kpis(
     player_name,
     scouting_pool,
     benchmark_pool,
+    player_id=None,
 ):
     """
     Retorna valores e percentis das métricas específicas
@@ -554,21 +564,10 @@ def get_player_kpis(
     posição no benchmark.
     """
 
-    player_rows = scouting_pool[
-        scouting_pool["name"]
-        == player_name
-    ]
-
-    if player_rows.empty:
-
-        raise ValueError(
-            f"Jogador não encontrado "
-            f"no scouting pool: "
-            f"{player_name}"
-        )
-
-    player = (
-        player_rows.iloc[0]
+    player = get_player_profile(
+        player_name,
+        scouting_pool,
+        player_id=player_id,
     )
 
     position_group = player[
@@ -759,6 +758,9 @@ def calculate_talent_ranking(
             in available_metrics
         }
 
+    if any(not np.isfinite(weight) or weight < 0 for weight in weights.values()):
+        raise ValueError("Os pesos devem ser finitos e não negativos.")
+
     if (
         sum(
             weights.values()
@@ -886,23 +888,13 @@ def calculate_talent_ranking(
     # METRIC COVERAGE
     # --------------------------------------------------------
 
-    candidate_pool[
-        "metrics_used"
-    ] = (
-        candidate_pool[
-            percentile_columns
-        ]
-        .notna()
-        .sum(
-            axis=1
-        )
-    )
+    active_metrics = [metric for metric in available_metrics if weights[metric] > 0]
+    active_percentile_columns = [f"{metric}_percentile" for metric in active_metrics]
 
-    candidate_pool[
-        "metrics_total"
-    ] = len(
-        available_metrics
+    candidate_pool["metrics_used"] = (
+        candidate_pool[active_percentile_columns].notna().sum(axis=1)
     )
+    candidate_pool["metrics_total"] = len(active_metrics)
 
     # --------------------------------------------------------
     # RANKING
