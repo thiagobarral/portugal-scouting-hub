@@ -45,8 +45,8 @@ dist/
 
 # Data
 data/raw/
-data/processed/players_2025_26.csv
-data/processed/scouting_dataset_2025_26.csv
+data/processed/*
+!data/processed/scouting_dataset_2025_26.csv
 
 # Source
 src/scouting_old.py
