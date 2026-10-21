@@ -2,6 +2,8 @@
 
 [English](README.md) | [Português](README.pt-BR.md)
 
+**[⚽ Acessar aplicativo online](https://portugal-scouting-u23.streamlit.app)** · [Código-fonte no GitHub](https://github.com/thiagobarral/portugal-scouting-hub)
+
 **Analytics aplicado ao scouting para identificação e avaliação de talentos SUB-23 no futebol português.**
 
 O Portugal Scouting Hub é um projeto de portfólio que combina coleta de dados, processamento, football analytics e um produto de dados interativo desenvolvido em Streamlit. A aplicação permite analisar perfis de jogadores, comparar atletas da mesma posição e buscar talentos por meio de métricas específicas por posição.
@@ -21,6 +23,8 @@ O objetivo não é automatizar decisões de scouting. A aplicação oferece uma 
 - **Buscar Talentos:** filtros por posição, idade, minutos e valor de mercado, com pesos configuráveis por posição.
 - **Análise do Resultado:** cobertura das métricas e características com maiores e menores percentis do candidato selecionado.
 - **Interface bilíngue:** português e inglês, com português como idioma padrão.
+- **Metodologia e transparência:** explicações sobre benchmark, percentis e Profile Score, além de avisos contextuais para amostras pequenas e métricas ausentes.
+- **Fotos e escudos:** imagens externas carregadas temporariamente pela aplicação, sujeitas à disponibilidade e às condições de uso da fonte.
 
 ## Pipeline de Dados
 
@@ -42,7 +46,7 @@ Profile Score
 Aplicação Streamlit + Plotly
 ```
 
-O arquivo `data/processed/scouting_dataset_2025_26.csv` é utilizado pela aplicação local, mas **não é distribuído neste repositório**. Os arquivos brutos em `data/raw/` também permanecem fora do controle de versão. A disponibilização pública dos dados e da aplicação depende da confirmação das condições de uso com o SofaScore.
+O arquivo processado `data/processed/scouting_dataset_2025_26.csv` está versionado neste repositório e é utilizado pela aplicação publicada. Os dados brutos em `data/raw/` permanecem fora do controle de versão. A publicação não substitui a necessidade de observar as condições de uso e redistribuição da fonte original.
 
 ## Dataset
 
@@ -126,7 +130,7 @@ football-analytics/
 │   └── app.py
 ├── data/
 │   ├── processed/
-│   │   └── scouting_dataset_2025_26.csv  # local; não versionado
+│   │   └── scouting_dataset_2025_26.csv  # versionado
 │   └── raw/                       # ignorado pelo Git
 ├── notebooks/
 │   ├── 01_data_quality.ipynb
@@ -134,6 +138,10 @@ football-analytics/
 ├── src/
 │   ├── scouting.py
 │   └── scripts de coleta / processamento
+├── tests/                          # testes unitários e de qualidade
+├── .github/
+│   └── workflows/
+│       └── tests.yml               # testes no GitHub Actions
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
@@ -181,15 +189,15 @@ Na raiz do projeto:
 python -m streamlit run app/app.py
 ```
 
-**Pré-requisito:** o arquivo `data/processed/scouting_dataset_2025_26.csv` deve estar disponível localmente. Ele não é fornecido no repositório. Sem esse arquivo, a aplicação não pode ser executada com os dados reais. Não há, neste momento, um dataset público para download nem uma instância pública hospedada.
+**Pré-requisito:** o arquivo `data/processed/scouting_dataset_2025_26.csv` deve estar presente no caminho indicado. Na versão atual, ele está incluído no repositório. O aplicativo também pode ser utilizado sem instalação local em **[portugal-scouting-u23.streamlit.app](https://portugal-scouting-u23.streamlit.app)**.
 
 ## Fonte dos Dados e Condições de Uso
 
 **Fonte consultada no desenvolvimento:** [SofaScore](https://www.sofascore.com/). O projeto foi desenvolvido com estatísticas de jogadores da Liga Portugal 2025/26, obtidas por meio de endpoints utilizados pelo site, internos/não documentados. O dataset local foi limpo, selecionado e transformado para análise de scouting; essas transformações não alteram a atribuição da fonte original.
 
-A base local contém 574 jogadores e 46 campos. Os registros originais e processados **não são redistribuídos neste repositório**. A autorização para redistribuição dos dados e exibição pública das estatísticas no Streamlit ainda não foi confirmada. A referência à fonte não implica afiliação, endosso ou licença concedida pelo SofaScore.
+O dataset processado utilizado pelo aplicativo contém 574 jogadores e 46 campos e está disponível neste repositório. O aplicativo também exibe publicamente estatísticas derivadas desses dados. É responsabilidade do mantenedor assegurar que a coleta, a redistribuição e a exibição de dados e imagens respeitem as permissões e os termos aplicáveis. A referência à fonte não implica afiliação ou endosso pelo SofaScore.
 
-Os scripts de coleta e processamento documentam o fluxo técnico do projeto, mas não representam uma API oficial ou uma autorização de uso. Os endpoints podem mudar, e a execução de novas coletas deve observar os termos e permissões aplicáveis. Imagens de jogadores e clubes podem depender de recursos externos.
+Os scripts de coleta e processamento documentam o fluxo técnico do projeto, mas não representam uma API oficial ou uma autorização de uso. Os endpoints podem mudar, e a execução de novas coletas deve observar os termos e permissões aplicáveis. Fotos de jogadores e escudos dependem de recursos externos; a aplicação pode carregá-los temporariamente em memória para exibição, sem armazená-los permanentemente no repositório.
 
 ## Limitações
 
@@ -199,9 +207,27 @@ Um Profile Score alto representa aderência ao perfil estatístico selecionado, 
 
 ## Possíveis Evoluções
 
-Possíveis extensões incluem outras temporadas e tendências históricas, seletores de liga/temporada, perfis mais específicos por função, métricas contextuais adicionais, exportação de relatórios e deploy público da aplicação Streamlit, sujeito às permissões de uso dos dados.
+Possíveis extensões incluem outras temporadas e tendências históricas, seletores de liga/temporada, perfis mais específicos por função, métricas contextuais adicionais, exportação de relatórios e melhorias de observabilidade e manutenção da aplicação publicada.
 
 Modelos preditivos de Machine Learning e similaridade automática entre jogadores estão intencionalmente fora do escopo atual.
+
+## Testes e integração contínua
+
+O projeto possui testes automatizados para a lógica de scouting e a qualidade dos dados. Na validação mais recente, **75 testes passaram**, com um aviso informativo sobre valores ausentes esperados no dataset.
+
+Execute localmente:
+
+```bash
+python -m pytest tests/ -v
+```
+
+O workflow `.github/workflows/tests.yml` executa os testes no GitHub Actions após atualizações do repositório. Para executar a suíte localmente, instale também o `pytest` se ele não estiver no ambiente.
+
+## Aplicação publicada
+
+**[Abrir Portugal Scouting Hub](https://portugal-scouting-u23.streamlit.app)**
+
+O deploy é realizado pelo Streamlit Community Cloud a partir do repositório GitHub, com `app/app.py` como arquivo principal. A interface oferece as páginas Perfil do Jogador, Comparar e Buscar Talentos.
 
 ## Autor
 

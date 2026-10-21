@@ -2,25 +2,29 @@
 
 [English](README.md) | [Português](README.pt-BR.md)
 
+**[⚽ Launch the live app](https://portugal-scouting-u23.streamlit.app)** · [Source code on GitHub](https://github.com/thiagobarral/portugal-scouting-hub)
+
 **Data-driven scouting analytics for identifying and evaluating U23 talent in Portuguese football.**
 
-Portugal Scouting Hub is a portfolio project combining data collection, processing, football analytics and an interactive Streamlit product. It supports player profiling, same-position comparison and configurable talent discovery using position-specific performance metrics.
+Portugal Scouting Hub is a portfolio project combining data collection, processing, football analytics, and an interactive Streamlit data product. The application enables users to explore player profiles, compare players in the same positional group, and discover talent using position-specific metrics.
 
-> **Important:** the Profile Score is a configurable profile-fit indicator based on selected metrics and weights. It is not an objective measure of overall player quality.
+> **Important:** Profile Score is a configurable measure of how closely a player's statistical profile matches the selected metrics and weights. It is **not** an objective measure of a player's overall quality.
 
 ## Project Objective
 
 The project addresses a practical recruitment question: **How can performance data help identify and contextualize U23 players in Portuguese football?**
 
-The goal is not to automate scouting decisions. The application provides an analytical layer to explore player profiles, compare players within the same positional group, filter U23 candidates by recruitment constraints, contextualize performance through same-position percentiles and create custom scouting profiles by changing metric weights.
+The goal is not to automate scouting decisions. Instead, the app provides an analytical layer for individual player exploration, same-position comparisons, U23 candidate filtering, positional percentiles, and customized scouting profiles through adjustable metric weights.
 
-## Main Features
+## Key Features
 
-- **Player Profile:** player information, season participation, position-specific indicators and percentile radar.
-- **Player Comparison:** comparison of two players from the same positional group using the same benchmark methodology.
-- **Talent Finder:** filters candidates by position, age, minutes and market value, with configurable position-specific metric weights.
-- **Result Analysis:** shows metric coverage and the highest- and lowest-ranked attributes of a selected candidate.
-- **Bilingual interface:** Portuguese and English, with Portuguese as the default language.
+- **Player Profile:** player information, season participation, position-specific indicators, and a percentile radar chart.
+- **Compare:** side-by-side comparison of two players in the same positional group using a shared benchmark.
+- **Talent Finder:** filters for position, age, minutes, and market value, with customizable position-specific metric weights.
+- **Result Analysis:** metric coverage and the selected candidate's strongest and weakest percentile indicators.
+- **Bilingual interface:** Portuguese and English, with Portuguese as the default.
+- **Methodology and transparency:** explanations of benchmarks, percentiles, and Profile Score, plus contextual notices for small samples and missing metrics.
+- **Player photos and club badges:** external images loaded temporarily by the application, subject to source availability and usage terms.
 
 ## Data Pipeline
 
@@ -42,25 +46,25 @@ Profile Score
 Streamlit + Plotly application
 ```
 
-The application uses `data/processed/scouting_dataset_2025_26.csv` locally, but **this file is not distributed in the repository**. Raw files in `data/raw/` are also excluded from version control. Public distribution of the dataset and deployment of the application are pending clarification of data usage permissions with SofaScore.
+The processed file `data/processed/scouting_dataset_2025_26.csv` is version-controlled in this repository and powers the deployed application. Raw data under `data/raw/` remains excluded from version control. Publication does not replace the need to comply with the original source's usage and redistribution conditions.
 
 ## Dataset
 
-The application dataset contains **574 unique players** from the 2025/26 Portuguese league dataset used in this project. The locally processed dataset contains **46 fields**, selected from the larger collected dataset to include only information and statistics required by the application.
+The application uses **574 unique players** from the Liga Portugal 2025/26 dataset assembled for this project. The processed dataset contains **46 fields**, selected from the original data to retain information and statistics relevant to scouting.
 
-It includes player/team identifiers, name, birth date, calculated age, U23 flag, position, height, preferred foot, country, market value, minutes, appearances, starts and the attacking, passing, defensive and goalkeeper statistics required by the analytical engine.
+Fields include identifiers, player name, club, date of birth, calculated age, U23 flag, position, height, preferred foot, country, market value, minutes, matches, starts, and attacking, passing, defensive, and goalkeeper statistics.
 
-Derived fields such as per-90 metrics, positional percentiles and Profile Score are calculated by the code rather than stored as source observations.
+Derived metrics such as per-90 rates, positional percentiles, and Profile Score are calculated in code rather than stored as original observations from the source.
 
 ## Scouting Methodology
 
 ### U23 Definition
 
-Age is calculated using **1 July 2025** as the reference date for the 2025/26 season. A player is classified as U23 when they had not yet turned 23 on that date.
+Age is calculated using **July 1, 2025** as the reference date for the 2025/26 season. A player is classified as U23 if they had not yet turned 23 on that date.
 
 ### Minimum Minutes
 
-A minimum threshold of **450 minutes** is used for the statistical benchmark, equivalent to five complete 90-minute matches. Players below this threshold are not deleted from the dataset; the threshold is used to build a more stable comparison benchmark.
+The statistical benchmark uses a **450-minute** threshold, equivalent to five full matches. Players below this threshold remain in the dataset; the threshold is used to construct a more stable reference group.
 
 ### Positional Groups
 
@@ -75,25 +79,25 @@ A minimum threshold of **450 minutes** is used for the statistical benchmark, eq
 
 ### Per-90 Normalization
 
-Volume statistics are normalized to 90 minutes:
+Counting statistics are normalized to 90 minutes:
 
 ```text
 metric_per90 = metric / minutes_played × 90
 ```
 
-Percentage-based metrics are not converted to per 90.
+Percentage metrics are not converted to per-90 rates.
 
 ### Positional Benchmark
 
-Percentiles are calculated against **all eligible players in the same positional group with at least 450 minutes**, not only U23 players. This contextualizes U23 candidates against the broader league-level positional benchmark.
+Percentiles are calculated against **all eligible players in the same positional group with at least 450 minutes**, not only U23 players. This places young candidates in the context of the broader positional benchmark in the league.
 
 ### Percentiles
 
-For most metrics, higher values produce higher percentiles. For lower-is-better metrics the direction is inverted; in the current methodology, `goalsConceded_per90` is treated this way.
+For most metrics, higher values correspond to higher percentiles. The direction is reversed for metrics where lower values are preferable; in the current methodology, `goalsConceded_per90` is treated this way.
 
-A percentile close to 100 means the player's value ranks near the top of the same-position benchmark for that metric.
+A percentile near 100 indicates that a player's value is near the top of the same-position benchmark for that metric.
 
-### Position-Specific Metrics
+### Metrics by Position
 
 | Position | Metrics |
 |---|---|
@@ -101,22 +105,22 @@ A percentile close to 100 means the player's value ranks near the top of the sam
 | Winger | Goals/90, xG/90, Assists/90, xA/90, Key Passes/90, Successful Dribbles/90 |
 | Midfielder | Assists/90, xA/90, Key Passes/90, Accurate Final Third Passes/90, Ball Recoveries/90, Interceptions/90 |
 | Full Back | Assists/90, xA/90, Key Passes/90, Accurate Final Third Passes/90, Successful Dribbles/90, Interceptions/90 |
-| Centre Back | Tackles/90, Interceptions/90, Clearances/90, Ball Recoveries/90, Aerial Duels Won %, Accurate Passes % |
-| Goalkeeper | Saves/90, Goals Prevented/90, Goals Conceded/90, High Claims/90, Successful Runs Out/90, Accurate Passes % |
+| Centre Back | Tackles/90, Interceptions/90, Clearances/90, Ball Recoveries/90, Aerial Duels Won %, Pass Accuracy % |
+| Goalkeeper | Saves/90, Goals Prevented/90, Goals Conceded/90, High Claims/90, Successful Runs Out/90, Pass Accuracy % |
 
-These metrics represent the analytical profiles selected for this project, not universal definitions of performance for each position.
+These metrics reflect the analytical profiles selected for this project; they are not universal definitions of performance for each position.
 
 ### Profile Score
 
-The Profile Score is a weighted average of the player's same-position metric percentiles:
+Profile Score is the weighted average of a player's metric percentiles within their positional group:
 
 ```text
-Profile Score = Σ(metric percentile × metric weight) / Σ(available metric weights)
+Profile Score = Σ(metric percentile × metric weight) / Σ(weights of available metrics)
 ```
 
-Users can change the metric weights in Talent Finder. Missing metrics are excluded rather than treated as zero, and the application reports metric coverage.
+Users can adjust weights in Talent Finder. Missing metrics are excluded from the calculation rather than assigned a value of zero, and the application reports metric coverage.
 
-The score answers: **How strongly does this player's statistical profile match the currently selected metrics and weights relative to players in the same position?** It is not an objective ranking of overall football ability or future potential.
+The score answers: **How closely does this player's statistical profile match the currently selected metrics and weights, compared with players in the same position?** It does not represent an objective ranking of overall quality or future potential.
 
 ## Project Structure
 
@@ -126,23 +130,27 @@ football-analytics/
 │   └── app.py
 ├── data/
 │   ├── processed/
-│   │   └── scouting_dataset_2025_26.csv  # local; not tracked
-│   └── raw/                       # ignored by Git
+│   │   └── scouting_dataset_2025_26.csv  # version-controlled
+│   └── raw/                               # Git-ignored
 ├── notebooks/
 │   ├── 01_data_quality.ipynb
 │   └── 02_player_analysis.ipynb
 ├── src/
 │   ├── scouting.py
 │   └── collection / processing scripts
+├── tests/                                  # unit and data-quality tests
+├── .github/
+│   └── workflows/
+│       └── tests.yml                       # GitHub Actions tests
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
 └── README.pt-BR.md
 ```
 
-`src/scouting.py` contains the reusable analytical logic used by the Streamlit application, including data preparation, per-90 calculations, positional pools, percentiles and Talent Finder ranking.
+`src/scouting.py` contains reusable analytical logic for data preparation, per-90 calculations, positional pools, percentiles, and Talent Finder rankings.
 
-## Technologies
+## Tech Stack
 
 Python · Pandas · NumPy · Streamlit · Plotly · Matplotlib · curl-cffi · Jupyter Notebook
 
@@ -181,28 +189,46 @@ From the project root:
 python -m streamlit run app/app.py
 ```
 
-**Prerequisite:** `data/processed/scouting_dataset_2025_26.csv` must be available locally. It is not provided with this repository. Without this file, the app cannot run against the real dataset. There is currently no publicly downloadable dataset or hosted public application.
+**Prerequisite:** `data/processed/scouting_dataset_2025_26.csv` must be available at the specified path. It is included in the current repository. Alternatively, use the hosted application at **[portugal-scouting-u23.streamlit.app](https://portugal-scouting-u23.streamlit.app)** without installing anything locally.
 
-## Data Source and Usage Permissions
+## Data Source and Usage Conditions
 
-**Source consulted during development:** [SofaScore](https://www.sofascore.com/). The project was developed using player statistics for Liga Portugal 2025/26, obtained through internal/undocumented endpoints used by the website. The local dataset was cleaned, selected and transformed for scouting analysis; these transformations do not change the attribution of the original source.
+**Source consulted during development:** [SofaScore](https://www.sofascore.com/). The project uses Liga Portugal 2025/26 player statistics obtained through internal/undocumented endpoints used by the website. The local dataset was cleaned, selected, and transformed for scouting analysis; these transformations do not change the attribution of the original source.
 
-The local dataset contains 574 players and 46 fields. Original and processed records **are not redistributed through this repository**. Permission to redistribute the data or publicly display the statistics through Streamlit has not yet been confirmed. Attribution does not imply affiliation, endorsement or a license from SofaScore.
+The processed dataset used by the application contains 574 players and 46 fields and is available in this repository. The application also publicly displays statistics derived from these data. The maintainer is responsible for ensuring that collection, redistribution, and display of data and images comply with applicable permissions and terms. Attribution does not imply affiliation with or endorsement by SofaScore.
 
-The collection and processing scripts document the technical workflow; they are not an official API or evidence of permission to use the service. Endpoints may change, and any further collection must comply with applicable terms and permissions. Player and team images may depend on external resources.
+Collection and processing scripts document the project's technical workflow; they do not represent an official API or permission to use it. Endpoints may change, and future collection must comply with applicable terms and permissions. Player photos and club badges depend on external resources; the application may temporarily cache them in memory for display without permanently storing them in the repository.
 
 ## Limitations
 
-This project is an analytical scouting aid and does not replace contextual football analysis, live scouting or video analysis. Statistical data cannot capture every tactical or qualitative aspect of performance; per-90 normalization does not remove differences in role, team strength, tactical context or sample size; market values are contextual estimates; the 450-minute threshold is a methodological choice; positional groups simplify more specific roles; and selected metrics and weights directly influence the Profile Score. Goalkeeper metrics can also be strongly affected by team and opposition context.
+This project supports scouting analysis but does not replace contextual assessment, live observation, or video analysis. Statistics do not capture every tactical or qualitative aspect; per-90 normalization does not remove differences in role, team strength, tactical context, or sample size; market values are estimates; the 450-minute threshold is a methodological choice; positional groups simplify more specific roles; and selected metrics and weights directly influence Profile Score. Goalkeeper metrics are also strongly affected by team and opposition context.
 
-A high Profile Score therefore represents fit to the selected statistical profile, not guaranteed quality, potential or recruitment success.
+A high Profile Score indicates alignment with the selected statistical profile, not a guarantee of player quality, potential, or recruitment success.
 
-## Future Improvements
+## Potential Improvements
 
-Possible extensions include additional seasons and historical trends, league/season selectors, richer role-specific profiles, additional contextual metrics, exportable scouting reports and public deployment of the Streamlit application, subject to data usage permissions.
+Potential extensions include additional seasons and historical trends, league/season selectors, more role-specific profiles, additional contextual metrics, report exports, and improvements to monitoring and maintenance of the deployed application.
 
-Machine-learning player similarity and predictive models are intentionally outside the current scope.
+Predictive Machine Learning models and automatic player similarity are intentionally outside the current scope.
+
+## Testing and Continuous Integration
+
+The project includes automated tests for scouting logic and data quality. In the most recent reported validation, **75 tests passed**, with one informational warning about expected missing values in the dataset.
+
+Run locally:
+
+```bash
+python -m pytest tests/ -v
+```
+
+The `.github/workflows/tests.yml` workflow runs tests in GitHub Actions after repository updates. To run the suite locally, install `pytest` if it is not already available in your environment.
+
+## Live Application
+
+**[Open Portugal Scouting Hub](https://portugal-scouting-u23.streamlit.app)**
+
+The application is deployed on Streamlit Community Cloud from the GitHub repository, using `app/app.py` as its entry point. The interface provides Player Profile, Compare, and Talent Finder pages.
 
 ## Author
 
-Portfolio project focused on **Data Analytics, Data Engineering and Football Analytics**.
+A portfolio project focused on **Data Analytics, Data Engineering, and Football Analytics**.
