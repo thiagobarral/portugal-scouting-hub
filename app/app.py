@@ -1,5 +1,8 @@
 import sys
 import html as html_lib
+import base64
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 from pathlib import Path
 
 import pandas as pd
@@ -1219,6 +1222,34 @@ def render_performance_card(
     )
 
 
+@st.cache_data(ttl=86400, max_entries=1200, show_spinner=False)
+def fetch_sofascore_image(kind, image_id):
+    """Fetch an image as an in-memory data URI; never write it to disk.
+
+    A None result is cached too, avoiding repeated failed requests.
+    """
+    if kind not in {"player", "team"}:
+        return None
+    try:
+        image_id = int(image_id)
+        if image_id <= 0:
+            return None
+        url = f"https://img.sofascore.com/api/v1/{kind}/{image_id}/image"
+        request = Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "image/*"})
+        with urlopen(request, timeout=6) as response:
+            content_type = response.headers.get("Content-Type", "").split(";")[0].lower()
+            if content_type not in {"image/jpeg", "image/png", "image/webp", "image/gif"}:
+                return None
+            # Bound memory use and reject unexpected oversized responses.
+            payload = response.read(2_000_001)
+            if not payload or len(payload) > 2_000_000:
+                return None
+        encoded = base64.b64encode(payload).decode("ascii")
+        return f"data:{content_type};base64,{encoded}"
+    except (ValueError, TypeError, HTTPError, URLError, TimeoutError, OSError):
+        return None
+
+
 def render_player_panel(
     info,
     language,
@@ -1249,25 +1280,18 @@ def render_player_panel(
 
     badge_html = ""
     if team_id is not None:
-        badge_url = (
-            f"https://img.sofascore.com/api/v1/team/{int(team_id)}/image"
-        )
-        badge_html = (
-            f'<img class="club-badge" src="{badge_url}" '
-            f'alt="{team_html}" loading="lazy">'
-        )
+        badge_src = fetch_sofascore_image("team", team_id)
+        if badge_src:
+            badge_html = (
+                f'<img class="club-badge" src="{badge_src}" '
+                f'alt="{team_html}">'
+            )
 
-    if player_id is not None:
-        photo_url = (
-            f"https://img.sofascore.com/api/v1/player/{int(player_id)}/image"
-        )
+    photo_src = fetch_sofascore_image("player", player_id) if player_id is not None else None
+    if photo_src:
         photo_html = (
             '<div class="player-photo-wrap">'
-            f'<img class="player-photo" src="{photo_url}" '
-            f'alt="{name_html}" loading="lazy" '
-            "onerror=\"this.style.display='none';"
-            "this.nextElementSibling.style.display='flex';\">"
-            '<div class="player-photo-fallback">&#9823;</div>'
+            f'<img class="player-photo" src="{photo_src}" alt="{name_html}">'
             '</div>'
         )
     else:
