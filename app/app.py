@@ -29,6 +29,8 @@ from src.scouting import (
     get_player_kpis,
     calculate_talent_ranking,
     get_talent_metrics,
+    MIN_MINUTES,
+    LOWER_IS_BETTER,
 )
 
 # ============================================================
@@ -983,6 +985,18 @@ def restore_widget_value(
         st.session_state[widget_key] = saved_value
 
 
+def player_options(frame):
+    """Unique player IDs, sorted for consistent selectors."""
+    return (frame.dropna(subset=["player_id"])
+            .sort_values(["name", "team_name", "player_id"], kind="stable")
+            ["player_id"].drop_duplicates().tolist())
+
+
+def player_option_label(player_id):
+    row = analysis.loc[analysis["player_id"] == player_id].iloc[0]
+    return f"{row['name']} · {row['team_name']}"
+
+
 def safe_value(value):
     try:
         if value is None:
@@ -1710,6 +1724,91 @@ analysis, benchmark_pool, scouting_pool = (
 )
 
 
+
+# ============================================================
+# TRANSPARENCY / DATA COVERAGE
+# ============================================================
+
+def render_data_notice(player_id, language, *, prefix=None):
+    """Contextual warnings only; do not change rankings or impute missing data."""
+    rows = analysis.loc[analysis["player_id"] == player_id]
+    if rows.empty:
+        return
+    player = rows.iloc[0]
+    minutes = pd.to_numeric(pd.Series([player.get("minutesPlayed")]), errors="coerce").iloc[0]
+    label = f"{prefix}: " if prefix else ""
+    if pd.isna(minutes) or minutes < MIN_MINUTES:
+        st.caption(
+            label + (
+                f"⚠ Amostra reduzida: {format_integer(minutes)} minutos. "
+                f"O benchmark usa jogadores com pelo menos {MIN_MINUTES} minutos; "
+                "percentis deste jogador devem ser interpretados com cautela."
+                if language == "PT" else
+                f"⚠ Small sample: {format_integer(minutes)} minutes. "
+                f"The benchmark includes players with at least {MIN_MINUTES} minutes; "
+                "interpret this player's percentiles with caution."
+            )
+        )
+    position = player.get("position_group")
+    if pd.isna(position):
+        return
+    metrics = get_talent_metrics(position)
+    missing = [metric for metric in metrics if metric not in analysis.columns or pd.isna(player.get(metric))]
+    if missing:
+        labels = ", ".join(METRIC_LABELS[language].get(m, m) for m in missing)
+        st.caption(label + (
+            f"⚠ Métricas indisponíveis: {labels}. Valores ausentes não são tratados como zero."
+            if language == "PT" else
+            f"⚠ Missing metrics: {labels}. Missing values are not treated as zero."
+        ))
+
+
+def render_methodology(language):
+    """Compact, bilingual explanation of the actual scouting-engine rules."""
+    with st.expander("ⓘ Metodologia e dados" if language == "PT" else "ⓘ Methodology & data", expanded=False):
+        if language == "PT":
+            st.markdown(
+                "**Fonte:** estatísticas de jogadores coletadas do SofaScore, "
+                "organizadas no dataset processado da Liga Portugal 2025/26. "
+                "Os dados refletem o momento da coleta e não são atualizados em tempo real.\n\n"
+                f"**Benchmark:** jogadores do mesmo grupo posicional com pelo menos **{MIN_MINUTES} minutos**. "
+                "O Talent Finder considera jogadores SUB-23 com posição identificada, "
+                "sem impor automaticamente esse limite de minutos.\n\n"
+                "**Métricas:** contagens são convertidas para valores por 90 minutos; "
+                "percentuais originais permanecem percentuais. "
+                "Os percentis (0–100) comparam o jogador aos valores disponíveis do benchmark "
+                "da mesma posição, inclusive quando o próprio jogador tem menos de 450 minutos.\n\n"
+                "**Profile Score:** média ponderada dos percentis das métricas ativas "
+                "do perfil escolhido. Métricas sem dados ou com peso zero não entram no cálculo; "
+                "os pesos restantes são renormalizados. O score não é uma avaliação objetiva "
+                "de qualidade nem uma previsão de desempenho futuro.\n\n"
+                "**Limitações:** amostras pequenas, métricas ausentes e diferenças de contexto "
+                "entre clubes podem influenciar os resultados."
+            )
+            st.caption("Métricas em que menor é melhor: " + ", ".join(
+                METRIC_LABELS[language].get(m, m) for m in sorted(LOWER_IS_BETTER)
+            ) + ".")
+        else:
+            st.markdown(
+                "**Source:** player statistics collected from SofaScore and organized "
+                "in the processed Liga Portugal 2025/26 dataset. Data are a snapshot, not a live feed.\n\n"
+                f"**Benchmark:** same-position players with at least **{MIN_MINUTES} minutes**. "
+                "Talent Finder includes U23 players with a known position, "
+                "without automatically enforcing this minutes threshold.\n\n"
+                "**Metrics:** counts are converted to per-90 values; existing percentages "
+                "remain percentages. Percentiles (0–100) compare each available value with "
+                "the same-position benchmark, even for players below 450 minutes.\n\n"
+                "**Profile Score:** weighted average of percentiles for active profile metrics. "
+                "Missing or zero-weight metrics are excluded and remaining weights are "
+                "renormalized. This is neither an objective player grade nor a prediction.\n\n"
+                "**Limitations:** small samples, missing statistics and club context "
+                "may affect comparisons."
+            )
+            st.caption("Lower is better for: " + ", ".join(
+                METRIC_LABELS[language].get(m, m) for m in sorted(LOWER_IS_BETTER)
+            ) + ".")
+
+
 # ============================================================
 # SIDEBAR
 # ============================================================
@@ -1823,6 +1922,9 @@ with st.sidebar:
             st.rerun()
 
 
+    st.markdown("---")
+    render_methodology(lang)
+
 # ============================================================
 # CURRENT SETTINGS
 # ============================================================
@@ -1853,36 +1955,18 @@ if page == "PLAYER PROFILE":
         ),
     )
 
-    player_names = (
-        scouting_pool["name"]
-        .dropna()
-        .sort_values()
-        .tolist()
-    )
-
-    restore_widget_value(
-        "profile_player",
-        player_names[0],
-        valid_values=player_names,
-    )
-
-    # Keep the player selector aligned with the first information card
-    # (Market Value). This also leaves the rest of the row visually clean.
+    player_ids = player_options(scouting_pool)
+    restore_widget_value("profile_player", player_ids[0], valid_values=player_ids)
     player_selector_col, _player_selector_spacer = st.columns([1, 3])
-
     with player_selector_col:
-        player_name = st.selectbox(
-            t["player"],
-            player_names,
-            key="profile_player",
-            on_change=persist_widget_value,
+        selected_player_id = st.selectbox(
+            t["player"], player_ids, format_func=player_option_label,
+            key="profile_player", on_change=persist_widget_value,
             args=("profile_player",),
         )
-
-    player_info = get_player_info(
-        player_name,
-        analysis,
-    )
+    player_info = get_player_info(None, analysis, player_id=selected_player_id)
+    player_name = player_info["name"]
+    render_data_notice(selected_player_id, lang)
 
     player_id = safe_value(player_info.get("player_id"))
     team_id = None
@@ -1954,6 +2038,7 @@ if page == "PLAYER PROFILE":
             player_name,
             scouting_pool,
             benchmark_pool,
+            player_id=selected_player_id,
         )
 
         metric_items = list(
@@ -2059,42 +2144,17 @@ elif page == "COMPARE":
     # PLAYER A
     # --------------------------------------------------------
 
-    selectable_players = (
-        scouting_pool["name"]
-        .dropna()
-        .sort_values()
-        .tolist()
-    )
-
-    selector_a, selector_b = (
-        st.columns(2)
-    )
-
-    restore_widget_value(
-        "compare_player_a",
-        selectable_players[0],
-        valid_values=selectable_players,
-    )
-
+    selectable_players = player_options(scouting_pool)
+    selector_a, selector_b = st.columns(2)
+    restore_widget_value("compare_player_a", selectable_players[0], valid_values=selectable_players)
     with selector_a:
-
-        player_a = st.selectbox(
-            t["player_a"],
-            selectable_players,
-            key="compare_player_a",
-            on_change=persist_widget_value,
+        player_a_id = st.selectbox(
+            t["player_a"], selectable_players, format_func=player_option_label,
+            key="compare_player_a", on_change=persist_widget_value,
             args=("compare_player_a",),
         )
-
-
-    # --------------------------------------------------------
-    # GET PLAYER A INFO
-    # --------------------------------------------------------
-
-    info_a = get_player_info(
-        player_a,
-        analysis,
-    )
+    info_a = get_player_info(None, analysis, player_id=player_a_id)
+    player_a = info_a["name"]
 
     position_group_a = safe_value(
         info_a[
@@ -2107,63 +2167,32 @@ elif page == "COMPARE":
     # PLAYER B — SAME POSITION GROUP
     # --------------------------------------------------------
 
-    players_b = (
-        scouting_pool.loc[
-            (
-                scouting_pool[
-                    "position_group"
-                ] == position_group_a
-            )
-            &
-            (
-                scouting_pool[
-                    "name"
-                ] != player_a
-            ),
-            "name",
-        ]
-        .dropna()
-        .sort_values()
-        .tolist()
-    )
-
+    players_b = player_options(scouting_pool.loc[
+        (scouting_pool["position_group"] == position_group_a)
+        & (scouting_pool["player_id"] != player_a_id)
+    ])
     with selector_b:
-
-        if len(players_b) > 0:
-
-            restore_widget_value(
-                "compare_player_b",
-                players_b[0],
-                valid_values=players_b,
-            )
-
-            player_b = st.selectbox(
-                t["player_b"],
-                players_b,
-                key="compare_player_b",
-                on_change=persist_widget_value,
+        if players_b:
+            restore_widget_value("compare_player_b", players_b[0], valid_values=players_b)
+            player_b_id = st.selectbox(
+                t["player_b"], players_b, format_func=player_option_label,
+                key="compare_player_b", on_change=persist_widget_value,
                 args=("compare_player_b",),
             )
-
         else:
-
-            player_b = None
-
-            st.warning(
-                t["no_comparable"]
-            )
-
+            player_b_id = None
+            st.warning(t["no_comparable"])
 
     # --------------------------------------------------------
     # COMPARISON
     # --------------------------------------------------------
 
-    if player_b is not None:
+    if player_b_id is not None:
 
-        info_b = get_player_info(
-            player_b,
-            analysis,
-        )
+        info_b = get_player_info(None, analysis, player_id=player_b_id)
+        player_b = info_b["name"]
+        render_data_notice(player_a_id, lang, prefix=t["player_a"])
+        render_data_notice(player_b_id, lang, prefix=t["player_b"])
 
 
         # ----------------------------------------------------
@@ -2262,12 +2291,14 @@ elif page == "COMPARE":
                 player_a,
                 scouting_pool,
                 benchmark_pool,
+                player_id=player_a_id,
             )
 
             kpis_b = get_player_kpis(
                 player_b,
                 scouting_pool,
                 benchmark_pool,
+                player_id=player_b_id,
             )
 
 
@@ -2286,9 +2317,9 @@ elif page == "COMPARE":
 
             comparison_radar = (
                 build_comparison_radar(
-                    player_a,
+                    player_option_label(player_a_id),
                     kpis_a,
-                    player_b,
+                    player_option_label(player_b_id),
                     kpis_b,
                     lang,
                 )
@@ -2342,8 +2373,8 @@ elif page == "COMPARE":
 
                 table_rows.append({
                     ("Métrica" if lang == "PT" else "Metric"): metric_label,
-                    player_a: display_a,
-                    player_b: display_b,
+                    player_option_label(player_a_id): display_a,
+                    player_option_label(player_b_id): display_b,
                 })
 
             comparison_df = pd.DataFrame(table_rows)
@@ -3012,44 +3043,28 @@ elif page == "TALENT FINDER":
             ),
         )
 
-        analysis_player_options = (
-            ranked_results["name"]
-            .dropna()
-            .tolist()
-        )
-
+        analysis_player_options = player_options(ranked_results)
         if analysis_player_options:
-
-            # Se os filtros mudarem e o jogador anteriormente
-            # selecionado sair dos resultados, seleciona o primeiro
-            # nome válido do ranking atual.
             if (
                 "talent_analysis_player" in st.session_state
-                and st.session_state.talent_analysis_player
-                not in analysis_player_options
+                and st.session_state.talent_analysis_player not in analysis_player_options
             ):
-                st.session_state.talent_analysis_player = (
-                    analysis_player_options[0]
-                )
-
-            selected_analysis_player = st.selectbox(
-                "Jogador"
-                if lang == "PT"
-                else "Player",
+                st.session_state.talent_analysis_player = analysis_player_options[0]
+            selected_analysis_player_id = st.selectbox(
+                "Jogador" if lang == "PT" else "Player",
                 options=analysis_player_options,
+                format_func=player_option_label,
                 key="talent_analysis_player",
                 width=230,
             )
-
             selected_rank_row = ranked_results.loc[
-                ranked_results["name"]
-                == selected_analysis_player
+                ranked_results["player_id"] == selected_analysis_player_id
             ].iloc[0]
-
+            selected_analysis_player = selected_rank_row["name"]
+            render_data_notice(selected_analysis_player_id, lang)
             selected_kpis = get_player_kpis(
-                selected_analysis_player,
-                scouting_pool,
-                benchmark_pool,
+                selected_analysis_player, scouting_pool, benchmark_pool,
+                player_id=selected_analysis_player_id,
             )
 
             score_value = safe_value(
