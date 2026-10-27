@@ -81,10 +81,10 @@ TEXT = {
         "starts": "STARTS",
         "performance": "PERFORMANCE",
         "performance_percentile_explanation":
-            "P = Percentile among players in the same position with at least 450 minutes played.",
+            f"P = Percentile among players in the same position with at least {MIN_MINUTES} minutes played.",
         "performance_profile": "PERFORMANCE PROFILE",
         "performance_profile_subtitle":
-            "0–100 percentile scale vs. same-position players with at least 450 minutes",
+            f"0–100 percentile scale vs. same-position players with at least {MIN_MINUTES} minutes",
         "comparison": "PLAYER COMPARISON",
         "comparison_subtitle":
             "Percentile comparison between players from the same positional group",
@@ -93,7 +93,7 @@ TEXT = {
         "goalkeeper_message":
             "Goalkeeper performance analysis will use a separate position-specific model.",
         "talent_message":
-            "Talent Finder will be implemented in the next step.",
+            "Find U23 players using recruitment filters and position-specific rankings.",
         "no_comparable":
             "No comparable players available.",
     },
@@ -112,10 +112,10 @@ TEXT = {
         "starts": "TITULARIDADES",
         "performance": "DESEMPENHO",
         "performance_percentile_explanation":
-            "P = Percentil entre jogadores da mesma posição com no mínimo 450 minutos jogados.",
+            f"P = Percentil entre jogadores da mesma posição com no mínimo {MIN_MINUTES} minutos jogados.",
         "performance_profile": "RADAR DE DESEMPENHO",
         "performance_profile_subtitle":
-            "Escala de percentil 0–100 comparada a jogadores da mesma posição com no mínimo 450 minutos",
+            f"Escala de percentil 0–100 comparada a jogadores da mesma posição com no mínimo {MIN_MINUTES} minutos",
         "comparison": "COMPARAÇÃO DE JOGADORES",
         "comparison_subtitle":
             "Comparação de percentis entre jogadores do mesmo grupo posicional",
@@ -124,7 +124,7 @@ TEXT = {
         "goalkeeper_message":
             "A análise de desempenho de goleiros utilizará um modelo específico para a posição.",
         "talent_message":
-            "O Talent Finder será implementado na próxima etapa.",
+            "Encontre jogadores SUB-23 com filtros de recrutamento e rankings por posição.",
         "no_comparable":
             "Não há jogadores comparáveis disponíveis.",
     },
@@ -1001,16 +1001,15 @@ def player_option_label(player_id):
 
 
 def safe_value(value):
+    """Return None for scalar missing values (NaN, pd.NA and NaT)."""
+    if value is None:
+        return None
     try:
-        if value is None:
+        missing = pd.isna(value)
+        if isinstance(missing, (bool, int)) and missing:
             return None
-
-        if value != value:
-            return None
-
     except (TypeError, ValueError):
         pass
-
     return value
 
 
@@ -1373,6 +1372,10 @@ def render_compare_player(
         info["market_value_eur"]
     )
 
+    name, team, position, position_group, foot, country = (
+        html_lib.escape(str(item))
+        for item in (name, team, position, position_group, foot, country)
+    )
     html = (
         f'<div class="compare-player {"player-a" if side == "a" else "player-b" if side == "b" else ""}">'
         f'<div class="compare-name">{name}</div>'
@@ -1980,6 +1983,9 @@ if page == "PLAYER PROFILE":
     )
 
     player_ids = player_options(scouting_pool)
+    if not player_ids:
+        st.warning("Nenhum jogador disponível." if lang == "PT" else "No players available.")
+        st.stop()
     restore_widget_value("profile_player", player_ids[0], valid_values=player_ids)
     player_selector_col, _player_selector_spacer = st.columns([1, 3])
     with player_selector_col:
@@ -2169,6 +2175,9 @@ elif page == "COMPARE":
     # --------------------------------------------------------
 
     selectable_players = player_options(scouting_pool)
+    if not selectable_players:
+        st.warning("Nenhum jogador disponível." if lang == "PT" else "No players available.")
+        st.stop()
     selector_a, selector_b = st.columns(2)
     restore_widget_value("compare_player_a", selectable_players[0], valid_values=selectable_players)
     with selector_a:
@@ -2557,15 +2566,12 @@ elif page == "TALENT FINDER":
             "Todos",
         )
 
-    max_age_available = int(
-        scouting_pool["age_2025_26"]
-        .dropna()
-        .max()
-    )
+    ages_available = pd.to_numeric(scouting_pool["age_2025_26"], errors="coerce").dropna()
+    max_age_available = max(16, int(ages_available.max())) if not ages_available.empty else 23
 
     restore_widget_value(
         "talent_age",
-        23,
+        min(23, max_age_available),
         min_value=16,
         max_value=max_age_available,
     )
@@ -2578,7 +2584,7 @@ elif page == "TALENT FINDER":
             else "Maximum age",
             min_value=16,
             max_value=max_age_available,
-            value=23,
+            value=min(23, max_age_available),
             step=1,
             key="talent_age",
             on_change=persist_widget_value,
@@ -2587,13 +2593,12 @@ elif page == "TALENT FINDER":
 
     filter_col3, filter_col4 = st.columns(2)
 
-    max_minutes_available = int(
-        scouting_pool["minutesPlayed"].max()
-    )
+    minutes_available = pd.to_numeric(scouting_pool["minutesPlayed"], errors="coerce").dropna()
+    max_minutes_available = max(0, int(minutes_available.max())) if not minutes_available.empty else 0
 
     restore_widget_value(
         "talent_minutes",
-        450,
+        min(450, max_minutes_available),
         min_value=0,
         max_value=max_minutes_available,
     )
@@ -2606,8 +2611,8 @@ elif page == "TALENT FINDER":
             else "Minimum minutes",
             min_value=0,
             max_value=max_minutes_available,
-            value=450,
-            step=90,
+            value=min(450, max_minutes_available),
+            step=1,
             key="talent_minutes",
             on_change=persist_widget_value,
             args=("talent_minutes",),
@@ -2618,9 +2623,7 @@ elif page == "TALENT FINDER":
         .dropna()
     )
 
-    max_market_available = int(
-        market_values.max()
-    )
+    max_market_available = max(0, int(market_values.max())) if not market_values.empty else 0
 
     restore_widget_value(
         "talent_market_value",
@@ -2638,7 +2641,7 @@ elif page == "TALENT FINDER":
             min_value=0,
             max_value=max_market_available,
             value=max_market_available,
-            step=500_000,
+            step=1,
             format="€%d",
             key="talent_market_value",
             on_change=persist_widget_value,
@@ -2925,6 +2928,7 @@ elif page == "TALENT FINDER":
                 "name",
                 "team_name",
                 "age_2025_26",
+                "position_group",
                 "minutesPlayed",
                 "market_value_eur",
                 "talent_score",
@@ -2966,6 +2970,7 @@ elif page == "TALENT FINDER":
                     "name": "Jogador",
                     "team_name": "Clube",
                     "age_2025_26": "Idade",
+                    "position_group": "Posição",
                     "minutesPlayed": "Minutos",
                     "market_value_eur":
                         "Valor de Mercado (€)",
@@ -2984,6 +2989,7 @@ elif page == "TALENT FINDER":
                     "name": "Player",
                     "team_name": "Club",
                     "age_2025_26": "Age",
+                    "position_group": "Position",
                     "minutesPlayed": "Minutes",
                     "market_value_eur":
                         "Market Value (€)",
@@ -2993,6 +2999,11 @@ elif page == "TALENT FINDER":
                         "Coverage",
                 }
             )
+
+        position_col = "Posição" if lang == "PT" else "Position"
+        talent_table[position_col] = talent_table[position_col].map(
+            lambda value: translate_position_group(value, lang)
+        )
 
         # Convert numeric values to display strings so Streamlit renders
         # every column left-aligned, matching the basic results table.
@@ -3118,7 +3129,7 @@ elif page == "TALENT FINDER":
 
             for metric in talent_metrics:
 
-                if metric not in selected_kpis:
+                if weights.get(metric, 0) <= 0 or metric not in selected_kpis:
                     continue
 
                 percentile = safe_value(
@@ -3281,6 +3292,11 @@ elif page == "TALENT FINDER":
                         "Market Value (€)",
                 }
             )
+
+        position_col = "Posição" if lang == "PT" else "Position"
+        talent_table[position_col] = talent_table[position_col].map(
+            lambda value: translate_position_group(value, lang)
+        )
 
         # Convert the displayed values to text so every column is
         # left-aligned consistently in the Talent Finder table.
